@@ -22,5 +22,5 @@ BRIrc >> openConnectionView [
 BRIrc >> start [
 
 	(self new: BRMainView) openWithSpec.
-	self openConnectionView
+	
 ]

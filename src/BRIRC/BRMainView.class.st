@@ -5,7 +5,7 @@ Class {
 		'channelsList',
 		'mainView',
 		'contextMenu',
-		'childrenViews',
+		'children',
 		'connHandler'
 	],
 	#category : #'BRIRC-App'
@@ -25,11 +25,41 @@ BRMainView class >> defaultSpec [
 	^ aLayout
 ]
 
+{ #category : #initialization }
+BRMainView >> addChannel: aString [
+
+channelsList items add: aString.
+children add: (BRChannel new title: aString).
+self update.
+]
+
+{ #category : #initialization }
+BRMainView >> addMessage: message toChannel: aString [
+
+	| found |
+	found := children detect: [ :c | c title = aString ].
+	found ifNil: [ ^ self ].
+
+	found messages add: message.
+
+	self update
+]
+
+{ #category : #initialization }
+BRMainView >> addUsers: aCollection toChannel: aString [
+|found|
+	found := children detect: [ :c| c title = aString ].
+	found ifNil:[^self].
+
+	found users addAll: aCollection.
+
+	self update
+]
+
 { #category : #'as yet unclassified' }
 BRMainView >> connectToServer: aString port: aNumber username: anotherString [
 
 	| serverView |
-	
 	connHandler disconnect.
 	connHandler := BRConnectionHandler new
 		               server: aString;
@@ -42,35 +72,26 @@ BRMainView >> connectToServer: aString port: aNumber username: anotherString [
 		              title: aString;
 		              application: self owner;
 		              yourself.
-		childrenViews removeAll.
-	childrenViews add: serverView.
 
 	mainView layout removeAll.
 	mainView layout add: serverView
 ]
 
 { #category : #initialization }
+BRMainView >> initialize [
+super initialize.
+
+children := OrderedCollection new.
+]
+
+{ #category : #initialization }
 BRMainView >> initializePresenters [
-
-	contextMenu := self newMenu
-		               addItem: [ :item | 
-			               item
-				               name: 'Connect To Server';
-				               action: [ self application openConnectionView ] ];
-		               addItem: [ :item | 
-			               item
-				               name: 'Test 2';
-				               action: [ "Action" ] ];
-		               yourself.
-
 	channelsList := self newList display: [ :each | each ].
 	mainView := BREmptyView new.
 
 	channelsList
-		items: #( 'No Connections' );
-		contextMenu: contextMenu.
+		items: (OrderedCollection  with:'No Connections' ).
 
-	
 ]
 
 { #category : #accessing }
@@ -78,13 +99,4 @@ BRMainView >> owner: aPresenter [
 
 	owner := aPresenter.
 
-	self owner announcer
-		when: NewConnectionInfoAnnouncement
-		do: [ :ann | 
-			
-			channelsList server = ann server ifTrue: [ ^ self ].
-			self
-				connectToServer: ann server
-				port: ann port
-				username: ann username ]
 ]
