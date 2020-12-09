@@ -9,6 +9,25 @@ Class {
 	#category : #'BRIRC-App'
 }
 
+{ #category : #specs }
+BRChannelView class >> defaultSpec [
+
+	^ SpBoxLayout new
+		  beVertical;
+		  beNotHomogeneous;
+		  add: (SpPanedLayout new
+				   beHorizontal;
+				position:70 percent;
+				   addFirst: #chat;
+				   addSecond: #users;
+				   yourself)
+		  expand: true
+		  fill: true
+		  padding: 1;
+		  add: #input height: 30;
+		  yourself
+]
+
 { #category : #adding }
 BRChannelView >> addMessage: aString [
 
@@ -41,6 +60,18 @@ BRChannelView >> changeUser: aUser to: anotherUser [
 
 	users items remove: aUser ifAbsent: [ ^ self ].
 	users items add: anotherUser.
+]
+
+{ #category : #initialization }
+BRChannelView >> initializePresenters [
+
+	users := self newList.
+	users items: (OrderedCollection with: 'User1' with: 'User2').
+	chat := self newText
+		        beNotEditable;
+		        yourself.
+	chat text: 'Hello', String crlf, 'there'.
+	input := self newTextInput
 ]
 
 { #category : #adding }
