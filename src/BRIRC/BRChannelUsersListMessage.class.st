@@ -14,7 +14,7 @@ BRChannelUsersListMessage >> users [
 ]
 
 { #category : #accessing }
-BRChannelUsersListMessage >> users: anObject [
+BRChannelUsersListMessage >> users: anOrderedCollectionOfString [
 
-	users := anObject
+	users := anOrderedCollectionOfString 
 ]

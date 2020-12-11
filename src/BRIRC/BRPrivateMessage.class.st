@@ -5,5 +5,8 @@ Class {
 		'name',
 		'messages'
 	],
+	#classVars : [
+		'xxx'
+	],
 	#category : #'BRIRC-App'
 }

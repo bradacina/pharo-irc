@@ -136,9 +136,8 @@ BRConnectionHandler >> parseMessage: aString [
 { #category : #'as yet unclassified' }
 BRConnectionHandler >> readLoop [
 
-	[ conn isConnected  ] whileTrue: [ 
-		self nextLine
-	 ]
+	[ conn isOtherEndConnected & conn isConnected ] whileTrue: [ 
+		self nextLine ]
 ]
 
 { #category : #'as yet unclassified' }

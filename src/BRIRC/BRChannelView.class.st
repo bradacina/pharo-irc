@@ -3,8 +3,10 @@ Class {
 	#superclass : #SpPresenter,
 	#instVars : [
 		'users',
-		'chat',
-		'input'
+		'input',
+		'userInputAction',
+		'channel',
+		'messages'
 	],
 	#category : #'BRIRC-App'
 }
@@ -17,65 +19,124 @@ BRChannelView class >> defaultSpec [
 		  beNotHomogeneous;
 		  add: (SpPanedLayout new
 				   beHorizontal;
-				position:70 percent;
-				   addFirst: #chat;
+				   position: 70 percent;
+				   addFirst: #messages;
 				   addSecond: #users;
 				   yourself)
 		  expand: true
 		  fill: true
-		  padding: 1;
+		  padding: 2;
 		  add: #input height: 30;
 		  yourself
 ]
 
 { #category : #adding }
 BRChannelView >> addMessage: aString [
-
-	chat  text: (chat text , aString)
+	<TODO: 'add mutex here'>
+	messages text: messages text , String crlf , aString.
+	self update
 ]
 
 { #category : #adding }
 BRChannelView >> addMessages: aCollection [
-	|stream|
-	stream := WriteStream new.
-	aCollection do: [ :item| item printOn: stream ].
-	chat text: stream contents.
+
+	<TODO: 'add mutex here'>
+	messages text: (String crlf join: aCollection).
+	self update
 ]
 
 { #category : #adding }
-BRChannelView >> addUser: aString [
+BRChannelView >> addUsers: aCollection forChannel: aString [
 
-	users items add: aString
-	
+	<TODO: 'add mutex here'>
+	| newCollection |
+	channel name= aString ifFalse: [ ^ self ].
+
+	newCollection := SortedCollection new
+		                 sortBlock: [ :a :b | self sortUserA: a userB: b ];
+		                 yourself.
+	newCollection addAll: aCollection.
+	users items: newCollection.
+
+	self update
 ]
 
-{ #category : #adding }
-BRChannelView >> addUsers: aCollection [
+{ #category : #accessing }
+BRChannelView >> channel [
 
-	users items: aCollection asSortedCollection 
+	^ channel
 ]
 
-{ #category : #adding }
-BRChannelView >> changeUser: aUser to: anotherUser [
+{ #category : #accessing }
+BRChannelView >> channel: anObject [
 
-	users items remove: aUser ifAbsent: [ ^ self ].
-	users items add: anotherUser.
+	<TODO: 'add mutex here'>
+	channel == anObject ifTrue: [ ^ self ].
+
+	channel := anObject.
+	messages text: (String crlf join: channel messages).
+	users items removeAll.
+	self addUsers: channel users forChannel: channel name.
+	input clearContent.
+	self update
 ]
 
 { #category : #initialization }
 BRChannelView >> initializePresenters [
 
 	users := self newList.
-	users items: (OrderedCollection with: 'User1' with: 'User2').
-	chat := self newText
-		        beNotEditable;
-		        yourself.
-	chat text: 'Hello', String crlf, 'there'.
-	input := self newTextInput
+	users items: (SortedCollection new
+			 sortBlock: [ :a :b | self sortUserA: a userB: b ];
+			 yourself).
+	users display: [ :u | 
+		| result |
+		result := u nick.
+		u isVoice ifTrue: [ result := '+' , u nick ].
+		u isHalfOp ifTrue: [ result := '&' , u nick ].
+		u isOp ifTrue: [ result := '@' , u nick ].
+		result ].
+
+	messages := self newText
+		            beNotEditable;
+		            yourself.
+	messages text: 'Hello' , String crlf , 'there'.
+
+	input := self newTextInput.
+	input whenSubmitDo: [ 
+		userInputAction ifNotNil: [ 
+			[ userInputAction cull: input text cull: channel ] onErrorDo: [ "do nothing"
+				 ] ].
+		input clearContent ]
 ]
 
-{ #category : #adding }
-BRChannelView >> removeUser: aString [
+{ #category : #sorting }
+BRChannelView >> sortUserA: userA userB: userB [
 
-	users items remove:aString.
+	| defaultSort |
+	defaultSort := [ ^ userA nick < userB nick ].
+	userA isOp & userB isOp not ifTrue: [ ^ true ].
+	userB isOp & userA isOp not ifTrue: [ ^ false ].
+	userA isOp & userB isOp ifTrue: defaultSort.
+
+	userA isHalfOp & userB isHalfOp not ifTrue: [ ^ true ].
+	userB isHalfOp & userA isHalfOp not ifTrue: [ ^ false ].
+	userA isHalfOp & userB isHalfOp ifTrue: defaultSort.
+
+	userA isVoice & userB isVoice not ifTrue: [ ^ true ].
+	userB isVoice & userA isVoice not ifTrue: [ ^ false ].
+	userA isVoice & userB isVoice ifTrue: defaultSort.
+
+	^ userA nick < userB nick
+]
+
+{ #category : #accessing }
+BRChannelView >> userInputAction [
+
+	^ userInputAction
+]
+
+{ #category : #accessing }
+BRChannelView >> userInputAction: anObject [
+
+	userInputAction := anObject
 ]

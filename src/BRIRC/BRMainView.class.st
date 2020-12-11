@@ -29,7 +29,7 @@ BRMainView class >> defaultSpec [
 BRMainView >> addChannel: aString [
 
 channelsList items add: aString.
-children add: (BRChannel new title: aString).
+children add: (BRChannel new topic: aString).
 self update.
 ]
 
@@ -37,7 +37,7 @@ self update.
 BRMainView >> addMessage: message toChannel: aString [
 
 	| found |
-	found := children detect: [ :c | c title = aString ].
+	found := children detect: [ :c | c topic = aString ].
 	found ifNil: [ ^ self ].
 
 	found messages add: message.
@@ -48,7 +48,7 @@ BRMainView >> addMessage: message toChannel: aString [
 { #category : #initialization }
 BRMainView >> addUsers: aCollection toChannel: aString [
 |found|
-	found := children detect: [ :c| c title = aString ].
+	found := children detect: [ :c| c topic = aString ].
 	found ifNil:[^self].
 
 	found users addAll: aCollection.
