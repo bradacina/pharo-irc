@@ -86,12 +86,18 @@ children := OrderedCollection new.
 
 { #category : #initialization }
 BRMainView >> initializePresenters [
+
 	channelsList := self newList display: [ :each | each ].
-	mainView := BREmptyView new.
+	mainView := BRChannelView new.
 
-	channelsList
-		items: (OrderedCollection  with:'No Connections' ).
-
+	channelsList whenSelectionChangedDo: [ :selected |
+		|found|
+		found := children detect:[:c| c title = selected].
+		found ifNil: [ ^self ].
+		mainView
+		 ]
+	
+	
 ]
 
 { #category : #accessing }

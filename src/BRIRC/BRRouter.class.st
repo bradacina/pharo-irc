@@ -5,7 +5,9 @@ Class {
 		'channels',
 		'chanView',
 		'connHandler',
-		'messageParser'
+		'messageParser',
+		'shouldLogMessages',
+		'log'
 	],
 	#category : #'BRIRC-App'
 }
@@ -74,21 +76,53 @@ BRRouter >> connHandler: aBRConnectionHandler [
 ]
 
 { #category : #initialization }
-BRRouter >> initialize [ 
-messageParser := BRMessageParser new.
+BRRouter >> initialize [
+
+	messageParser := BRMessageParser new.
+	shouldLogMessages  := false.
+	log := OrderedCollection new.
+]
+
+{ #category : #accessing }
+BRRouter >> log [
+
+	^ log
+]
+
+{ #category : #'as yet unclassified' }
+BRRouter >> privChannelMessage: aBRPrivChannelMessage [
+
+	| chan |
+	channels ifNil: [ ^ self ].
+
+	chan := channels detect: [ :c | 
+		        c name = aBRPrivChannelMessage channel ].
+	chan ifNil: [ ^ self ].
+
+	chan addMessage: aBRPrivChannelMessage message.
+
+	chanView ifNil: [ ^ self ].
+
+	chanView channel name = chan name ifTrue: [ 
+		chanView addMessage: '[' , aBRPrivChannelMessage shortFrom , ']:'
+			, aBRPrivChannelMessage message ]
 ]
 
 { #category : #options }
 BRRouter >> routeMessage: aBRMessage [
-	|msgClass|
-	msgClass := aBRMessage class.
-	
-	msgClass = BRChannelUsersListMessage ifTrue:[^ self channelUsersList: aBRMessage].
-	msgClass = BRPrivChannelMessage ifTrue:[].
-	msgClass = BRTopicMessage ifTrue:[].
-	msgClass = BRNickMessage ifTrue:[].
-	msgClass = BRModeMessage ifTrue:[].
-	channels ifNil:[^ self].
-	
 
+	shouldLogMessages ifTrue: [ log add: aBRMessage ].
+
+	aBRMessage isChannelUsersListMessage ifTrue: [ 
+		^ self channelUsersList: aBRMessage ].
+	aBRMessage isChannelPrivMessage ifTrue: [ 
+		^ self privChannelMessage: aBRMessage ].
+
+	
+]
+
+{ #category : #accessing }
+BRRouter >> shouldLogMessages: anObject [
+
+	shouldLogMessages := anObject
 ]

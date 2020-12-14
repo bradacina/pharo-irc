@@ -10,7 +10,7 @@ Class {
 { #category : #'as yet unclassified' }
 BRMessageParser >> genericChannelMessage: tokens ofType: type [
 
-	^ BRChannelMessage new
+	^ BRMessage  new
 		  messageType: type;
 		  channel: tokens second;
 		  message: (' ' join: (tokens allButFirst: 2));
@@ -18,9 +18,9 @@ BRMessageParser >> genericChannelMessage: tokens ofType: type [
 ]
 
 { #category : #'as yet unclassified' }
-BRMessageParser >> genericServerMessage: tokens ofType:  type [
+BRMessageParser >> genericServerMessage: tokens ofType: type [
 
-	^ BRServerMessage  new
+	^ BRMessage  new
 		  messageType: type;
 		  message: (' ' join: tokens);
 		  yourself
@@ -34,7 +34,7 @@ BRMessageParser >> initialize [
 		                 #privMsg:. 'MODE'. #mode:. 'QUIT'. #quit:. 'NICK'.
 		                 #nick:. 'KICK'. #kick:. 'NOTICE'. #notice:. '332'.
 		                 #listTopic:. '353'. #listChannelUsers:.
-		                 'TOPIC'. #topic:. '333'. #genericChanelMessage:ofType:.
+		                 'TOPIC'. #topic:. '333'. #genericChannelMessage:ofType:.
 		                 '366'. #genericChannelMessage:ofType:.
 		                 'PING'. #genericServerMessage:ofType:.
 		                 '001'. #genericServerMessage:ofType:.
@@ -53,8 +53,8 @@ BRMessageParser >> initialize [
 { #category : #splitjoin }
 BRMessageParser >> join: tokens [
 
-	^ BRChannelMessage new
-		messageType: 'JOIN';
+	^ BRMessage new
+		  messageType: 'JOIN';
 		  channel: tokens first;
 		  yourself
 ]
@@ -62,8 +62,8 @@ BRMessageParser >> join: tokens [
 { #category : #'as yet unclassified' }
 BRMessageParser >> kick: tokens [
 
-	^ BRUnknownMessage new
-	messageType:'KICK';
+	^ BRMessage new
+		  messageType: 'KICK';
 		  message: (' ' join: tokens);
 		  yourself
 ]
@@ -73,10 +73,10 @@ BRMessageParser >> listChannelUsers: tokens [
 
 	tokens at: 4 put: (tokens at: 4) allButFirst.
 
-	^ BRChannelUsersListMessage new
+	^ BRMessage new
 		  messageType: 'LIST_CHANNEL_USERS';
 		  channel: tokens third;
-		  users: (tokens allButFirst:3);
+		  users: (tokens allButFirst: 3);
 		  yourself
 ]
 
@@ -84,53 +84,57 @@ BRMessageParser >> listChannelUsers: tokens [
 BRMessageParser >> listTopic: tokens [
 
 	tokens at: 3 put: (tokens at: 3) allButFirst.
-	^ BRTopicMessage new
+	^ BRMessage new
 		  messageType: 'LIST_TOPIC';
 		  channel: tokens second;
-		  message: (' ' join: (tokens allButFirst:2) );yourself
+		  topic: (' ' join: (tokens allButFirst: 2));
+		  yourself
 ]
 
 { #category : #'as yet unclassified' }
 BRMessageParser >> messageNotParsable: from rest: aCollection [
 
 	| indexOfExclamation fromNotNil |
-	from ifNil: [ fromNotNil := 'SERVER' ] ifNotNil: [ fromNotNil:= from ].
+	from
+		ifNil: [ fromNotNil := 'SERVER' ]
+		ifNotNil: [ fromNotNil := from ].
 	indexOfExclamation := fromNotNil indexOf: $!.
-	indexOfExclamation = 0 ifTrue: [ indexOfExclamation := fromNotNil size ].
+	indexOfExclamation = 0 ifTrue: [ 
+		indexOfExclamation := fromNotNil size ].
 
-	^ BRUnknownMessage new
+	^ BRMessage new
 		  from: fromNotNil;
 		  shortFrom: (fromNotNil copyFrom: 1 to: indexOfExclamation);
-		  messageType: aCollection first;
-		  message: aCollection allButFirst;
+		  messageType: 'UNKNOWN';
+		  message: aCollection;
 		  yourself
 ]
 
 { #category : #'as yet unclassified' }
 BRMessageParser >> mode: tokens [
-	|chan|
-	chan :=tokens at:1 ifAbsent: [ '' ].
-	
-(	chan size > 0 and:[chan at:1 = $#] )ifTrue:[
-		^ BRModeMessage  new
-			messageType: 'MODE';
-			channel: chan;
-			message: ('' join: tokens allButFirst );
-			yourself
-		]
-	ifFalse:[
 
-	^ BRModeMessage new
-		  messageType: 'MODE';
-		  message: (' ' join: tokens);
-		  yourself]
+	| chan |
+	chan := tokens at: 1 ifAbsent: [ '' ].
+
+	(chan size > 0 and: [ (chan at: 1) = $# ])
+		ifTrue: [ 
+			^ BRMessage new
+				  messageType: 'CHAN_MODE';
+				  channel: chan;
+				  message: ('' join: tokens allButFirst);
+				  yourself ]
+		ifFalse: [ 
+			^ BRMessage new
+				  messageType: 'USER_MODE';
+				  message: (' ' join: tokens);
+				  yourself ]
 ]
 
 { #category : #'as yet unclassified' }
 BRMessageParser >> nick: tokens [
 
-	^ BRNickMessage new
-	messageType: 'NICK';
+	^ BRMessage new
+		  messageType: 'NICK';
 		  newNick: tokens first;
 		  yourself
 ]
@@ -138,7 +142,7 @@ BRMessageParser >> nick: tokens [
 { #category : #'as yet unclassified' }
 BRMessageParser >> notice: tokens [
 
-	^ BRServerMessage  new
+	^ BRMessage new
 		  messageType: 'NOTICE';
 		  message: (' ' join: tokens);
 		  yourself
@@ -195,8 +199,8 @@ BRMessageParser >> parseMessage: line [
 { #category : #'as yet unclassified' }
 BRMessageParser >> part: tokens [
 
-	^ BRChannelMessage new
-	messageType:'PART';
+	^ BRMessage new
+		  messageType: 'PART';
 		  channel: tokens first;
 		  yourself
 ]
@@ -210,14 +214,14 @@ BRMessageParser >> privMsg: tokens [
 
 	((target at: 1) = $# or: [ (target at: 1) = $@ ])
 		ifTrue: [ 
-			^ BRPrivChannelMessage new
-				  messageType: 'PRIVMSG';
+			^ BRMessage new
+				  messageType: 'CHAN_PRIVMSG';
 				  channel: tokens first;
 				  message: (' ' join: tokens allButFirst);
 				  yourself ]
 		ifFalse: [ 
-			^ BRPrivChatMessage new
-				  messageType: 'PRIVMSG';
+			^ BRMessage new
+				  messageType: 'DIRECT_PRIVMSG';
 				  message: (' ' join: tokens allButFirst);
 				  yourself ]
 ]
@@ -225,23 +229,19 @@ BRMessageParser >> privMsg: tokens [
 { #category : #'as yet unclassified' }
 BRMessageParser >> quit: tokens [
 
-	tokens at:1 put:(tokens at:1) allButFirst .
+	tokens at: 1 put: (tokens at: 1) allButFirst.
 
-	^BRPrivChatMessage  new
-	messageType:'QUIT';
-	message:(' ' join: tokens);
-	yourself 
-	
-		  
-		  
-		  
+	^ BRMessage new
+		  messageType: 'QUIT';
+		  message: (' ' join: tokens);
+		  yourself
 ]
 
 { #category : #'as yet unclassified' }
 BRMessageParser >> topic: tokens [
 
 	tokens at: 2 put: (tokens at: 2) allButFirst.
-	^ BRTopicMessage new
+	^ BRMessage new
 		  messageType: 'TOPIC';
 		  channel: tokens first;
 		  topic: (' ' join: tokens allButFirst);

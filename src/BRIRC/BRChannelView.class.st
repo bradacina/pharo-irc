@@ -32,9 +32,10 @@ BRChannelView class >> defaultSpec [
 
 { #category : #adding }
 BRChannelView >> addMessage: aString [
+
 	<TODO: 'add mutex here'>
 	messages text: messages text , String crlf , aString.
-	self update
+	messages update
 ]
 
 { #category : #adding }
@@ -42,7 +43,7 @@ BRChannelView >> addMessages: aCollection [
 
 	<TODO: 'add mutex here'>
 	messages text: (String crlf join: aCollection).
-	self update
+	messages update
 ]
 
 { #category : #adding }
@@ -50,15 +51,15 @@ BRChannelView >> addUsers: aCollection forChannel: aString [
 
 	<TODO: 'add mutex here'>
 	| newCollection |
-	channel name= aString ifFalse: [ ^ self ].
-
+	channel name = aString ifFalse: [ ^ self ].
+	[ 
 	newCollection := SortedCollection new
 		                 sortBlock: [ :a :b | self sortUserA: a userB: b ];
 		                 yourself.
 	newCollection addAll: aCollection.
 	users items: newCollection.
 
-	self update
+	users update ] forkAt: Processor userBackgroundPriority
 ]
 
 { #category : #accessing }
@@ -114,7 +115,7 @@ BRChannelView >> sortUserA: userA userB: userB [
 
 	| defaultSort |
 	defaultSort := [ ^ userA nick < userB nick ].
-	userA isOp & userB isOp not ifTrue: [ ^ true ].
+	(userA isOp & userB isOp not) ifTrue: [ ^ true ].
 	userB isOp & userA isOp not ifTrue: [ ^ false ].
 	userA isOp & userB isOp ifTrue: defaultSort.
 
